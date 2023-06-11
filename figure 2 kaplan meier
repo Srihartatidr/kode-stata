@@ -1,0 +1,107 @@
+*useful code
+help stset
+
+*converting string date to integer date
+generate date_basei=date(date_baseline, "YMD")
+format date_basei %d
+
+generate date_lefti=date(date_left, "YMD")
+format date_lefti %d
+
+generate m4_datei=date(m4_date, "YMD")
+format m4_datei %d
+
+generate m4_date_lefti=date(m4_date_left, "YMD")
+format m4_date_lefti %d
+
+generate m8_datei=date(m8_date, "YMD")
+format m8_datei %d
+
+generate m8_date_lefti=date(m8_date_left, "YMD")
+format m8_date_lefti %d
+
+generate m12_datei=date(m12_date, "YMD")
+format m12_datei %d
+
+generate m12_date_lefti=date(m12_date_left, "YMD")
+format m12_date_lefti %d
+
+gsort m12_date_lefti
+
+*membuat subset berdasarkan tanggal baseline
+keep if inrange(date_basei, td(12apr2021), td(17may2022)) & consent==1
+drop if subject_cat==1
+
+*generating day_in variable
+generate day_in = date_basei if consent==1
+format day_in %td
+
+*generating day_out variable
+generate day_out=.
+format day_out %td
+replace day_out=date_lefti if m4_datei==. & m8_datei==. & m12_datei==.
+replace day_out=m8_date_lefti if date_lefti==. & m4_date_lefti==. & m12_date_lefti==.
+replace day_out=m12_date_lefti if m8_date_lefti==. & m4_date_lefti==. & date_lefti==. 
+replace day_out=m12_datei if date_lefti==. & m4_date_lefti==. & m8_date_lefti==. & m12_date_lefti==.
+replace day_out=m8_date_lefti if date_lefti==. & m4_date_lefti==. & m12_datei==. & m12_date_lefti==.
+replace day_out=m4_date_lefti if date_lefti!=. & m4_datei!=. & m8_datei==. & m8_date_lefti==. & m12_datei==. & m12_date_lefti==.
+replace day_out=m4_date_lefti if date_lefti==. & m4_datei!=. & m8_datei==. & m8_date_lefti==. & m12_datei==. & m12_date_lefti==.
+gsort day_out 
+sort day_in
+codebook day_out
+
+*generating follow-up duration variables
+generate fudays=day_out-day_in
+generate fuweeks=fudays/7
+generate fumonths=fudays/30
+generate fuyears=(day_out-day_in)/365.25
+
+*generating event_tb variable
+generate event_tb=.
+replace event_tb=1 if case_category==1 | case_category==2 | m4_case_category==1 | m4_case_category==2 | m8_case_category==1 | m8_case_category==2 | m12_case_category==1 | m12_case_category==2
+replace event_tb=0 if event_tb!=1
+tabulate subject_cat event_tb
+
+*generating event_death variable
+generate event_death=.
+replace event_death=1 if left_reason==1 | m4_left_reason==1 | m8_left_reason==1 | m12_left_reason==1
+replace event_death=0 if event_death!=1
+tabulate subject_cat event_death if consent==1
+
+*using stset function berdasarkan fumonths
+stset fumonths, failure(event_tb==1) scale(1)
+
+*using stset function berdasarkan fudays
+stset fudays, failure(event_tb==1) scale(1)
+
+*menghitung cumulative incidence dan incidence rate
+di 348/1786
+di 348/26161.246
+
+*to obtain summary statistics, median fu time
+stdes
+gsort fudays
+
+*
+strate
+strate, per (1000)
+strate subject_cat, per(1000)
+stir subject_cat
+
+*generating unexposed group(1)=nc(3) and exposed group(2)=hhc(2)
+generate exposed_group=.
+replace exposed_group=2 if subject_cat==2
+replace exposed_group=1 if subject_cat==3
+
+*comparing two groups based on fumonths
+stir exposed_group
+sts graph, by(exposed_group) xlabel (0(2)16) xtitle("Months") ylab(0 "0" .25 "25" .5 "50" .75 "75" 1 "100") ytitle("Percentage") legend(label(1 "Neighbourhood Contacts") label(2 "Household Contacts")) risktable(, order(1 "Neighbourhood Contacts" 2 "Household Contacts")) text(2 30 "Log-rank p-value<0.001", size(small))
+sts test exposed_group, logrank
+
+*comparing two groups based on fudays
+sts graph, by(exposed_group) xlabel (0(60)420) xtitle("Days") ylab(0 "0" .25 "25" .5 "50" .75 "75" 1 "100") ytitle("Percentage") legend(label(1 "Neighbourhood Contacts") label(2 "Household Contacts")) risktable(, order(1 "Neighbourhood Contacts" 2 "Household Contacts")) text(2 30 "Log-rank p-value<0.001", size(small))
+sts test exposed_group, logrank
+
+*membuat histogram dari fumonths
+hist fumonths if subject_cat==2, freq addlabels xlabel(0(4)16)
+hist fumonths if subject_cat==3, freq addlabels xlabel(0(4)16)
