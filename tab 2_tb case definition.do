@@ -16,34 +16,8 @@ label value case_category casecatlab
 // calculating TB case definition based on subject_cat
 tab case_category subject_cat
 
-// calculating how long to tb diagnosis
-*converting string date to integer date
-generate date_basei=date(date_baseline, "YMD")
-format date_basei %d
-
-generate date_lefti=date(date_left, "YMD")
-format date_lefti %d
-
-*generating day_in variable
-generate day_in = date_basei if consent==1
-format day_in %td
-
-*generating day_out variable
-generate day_out=.
-format day_out %td
-replace day_out=date_lefti
-
-*generating follow-up duration variables
-generate fudays=day_out-day_in
-generate fuweeks=fudays/7
-generate fumonths=fudays/30
-sort fumonths
-// fudays ranges from -74 to 81 days for positive tb cases
-
 *computing ci for proportions
-*are there any missing values?
-tab case_category, miss
-tab case_category subject_cat
+tab case_category subject_cat, m
 
 // PREVALENCE //
 *ci and proportions (immediate command) based on tabulation above
@@ -101,7 +75,7 @@ gsort m12_datei
 browse
 
 *make a subset based on baseline date
-keep if consent==1
+keep if eligible==1 & consent==1
 drop if subject_cat==1
 keep if inrange(date_basei, td(12apr2021), td(11oct2022))
 
@@ -115,8 +89,9 @@ format day_in %td
 *generate day_out variable
 generate day_out=.
 format day_out %td
+browse subject_id date_basei date_lefti m4_datei m4_date_lefti m8_datei m8_date_lefti m12_datei m12_date_lefti day_in day_out
 replace day_out=date_lefti if m4_datei==. & m8_datei==. & m12_datei==.
-replace day_out=m8_date_lefti if date_lefti==. & m4_date_lefti==. & m12_date_lefti==.
+replace day_out=m8_date_lefti if date_lefti==. & m4_date_lefti==. & m8_date_lefti!=. & m12_date_lefti==.
 replace day_out=m12_date_lefti if m8_date_lefti==. & m4_date_lefti==. & date_lefti==. 
 replace day_out=m12_datei if date_lefti==. & m4_date_lefti==. & m8_date_lefti==. & m12_date_lefti==.
 replace day_out=m8_date_lefti if date_lefti==. & m4_date_lefti==. & m12_datei==. & m12_date_lefti==.
@@ -163,11 +138,10 @@ stset day_out, fail(case_category==1) origin(day_in) enter(day_in) id(subject_id
 stset day_out, fail(case_category==1) origin(day_in) enter(day_in) id(subject_id) scale(30)
 
 *calculate overall TB incidence rate
-di 26/4130.204
+di 27/4107.422
 // the TB incidence rate was 0.00629 cases per person-years, that is 6.29 in every 1000 people will experience TB in a year.
 
-*estimate TB IR and 95% CI
-*(i) per 1000 person-years
+*estimate TB IR and 95% CI per 1000 person-years
 strate, per (1000)
 // the TB IR was xxx cases per 1000 person-years
 // we are 95% confident that the population TB IR would at minimum be 141 and at maximum 233 cases in every 1000 persons per year.
@@ -183,7 +157,6 @@ stir exposed_group
 // the estimated rate ratio was 3.6 with the 95% CI for the population TB IRR as (2.1, 6.2)
 // this implies that the estimated TB IR for HHC is 3.6 times higher than that of NC
 // we are 95% confident that at minimum the population TB IR for HHC can be 2.1 times higher and at maximum 6.2 times higher than for NC
-
 
 *generate event_tb variable
 *b. probable tb
@@ -205,6 +178,6 @@ replace poss_tb=0 if poss_tb!=1
 tabulate subject_cat poss_tb
 
 stset fuyears, failure(poss_tb==1)
-di 154/4130.204
+di 152/4107.422
 strate, per (1000)
 strate exposed_group, per(1000)

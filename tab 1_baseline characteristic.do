@@ -1,4 +1,6 @@
 leftalign
+*subsetting: eligible and consented subjects
+keep if eligible==1 & consent==1
 
 *labelling
 label define sexlab 0 "Female" 1 "Male"
@@ -59,9 +61,6 @@ replace bmicat=1 if (bmi<18.5)
 replace bmicat=2 if (bmi>=18.5 & bmi<=22.9)
 replace bmicat=3 if (bmi>=23.0 & bmi<=24.9)
 replace bmicat=4 if (bmi>=25.0 & bmi<.)
-
-*subsetting: eligible and consented subjects
-keep if eligible==1 & consent==1
 
 *table filling (1)
 tabulate sex subject_cat, col m
@@ -142,7 +141,9 @@ tabulate fatigue subject_cat if subject_cat==2 | subject_cat==3, col chi2
 tabulate bmicat subject_cat, m col
 tabulate bmicat subject_cat if subject_cat==2 | subject_cat==3, col chi2
 tabulate cxr_result subject_cat, m col
-tabulate cxr_result subject_cat if subject_cat==2 & cxr_result!=4 | subject_cat==3 & cxr_result!=4, col chi2
+tabulate cxr_result subject_cat if (subject_cat==2 & cxr_result!=4) | (subject_cat==3 & cxr_result!=4), col chi2
+tabulate cxr_result subject_cat, m col
+tabulate cxr_result subject_cat if subject_cat==2 | subject_cat==3, m col chi2
 // 11 kasus indeks cxr_result nya missing karena tidak dilakukan, digabung ke not done.
 // ID berikut:
 
@@ -201,7 +202,7 @@ replace smear_fin=4 if smear1_result==4 & smear2_result==3
 replace smear_fin=4 if smear1_result==4 & smear2_result==4    
 //No result (sudah terakomodasi di atas semua)
 replace smear_fin=5 if
-codebook smear_fin
+tab subject_cat smear_fin, m
 
 *generating new variable: culture result final
 generate culture_fin=.
@@ -224,8 +225,8 @@ replace culture_fin=2 if culture1_result==5
 
 *table filling (4)
 tabulate smear_fin subject_cat if smear_fin!=., m col
-tabulate smear_fin subject_cat if subject_cat==2 & smear_fin!=. | subject_cat==3 & smear_fin!=., col chi2
+tabulate smear_fin subject_cat if subject_cat==2 & smear_fin!=. | subject_cat==3 & smear_fin!=., m col chi2
 tabulate xpert_result subject_cat if xpert_result!=5, m col
-tabulate xpert_result subject_cat if subject_cat==2 & xpert_result!=5 | subject_cat==3 & xpert_result!=5, col chi2
+tabulate xpert_result subject_cat if (subject_cat==2 & xpert_result!=5) | (subject_cat==3 & xpert_result!=5), m col chi2
 tabulate culture_fin subject_cat if culture_fin!=., m col
-tabulate culture_fin subject_cat if subject_cat==2 & culture_fin!=. | subject_cat==3 & culture_fin!=., col chi2
+tabulate culture_fin subject_cat if subject_cat==2 & culture_fin!=. | subject_cat==3 & culture_fin!=., m col chi2

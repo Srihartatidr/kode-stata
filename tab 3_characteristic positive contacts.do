@@ -23,10 +23,19 @@ label value hiv_diag hivdiaglab
 label define xpertlab 0 "Mtb not detected" 1 "Mtb detected, Rif sen" 2 "Mtb detected, Rif res" 3 "Indeterminate" 4 "Error" 5 "Not done"
 label list
 label value xpert_result xpertlab 
-label define culturelab 1 "Negative" 2 "negative contaminated" 3 "Positive" 4 "Positive contaminated" 5 "Indeterminate" 6 "No result"
+label define smearlab 0 "Negative" 1 "Scanty" 2 "Positive 1" 3 "Positive 2" 4 "Positive 3" 5 "No result"
+label list
+label value smear_fin smearlab
+label define culturelab 1 "Negative" 2 "Negative contaminated" 3 "Positive" 4 "Positive contaminated" 5 "Indeterminate" 6 "No result"
 label list
 label value culture1_result culturelab 
-label value culture2_result culturelab 
+label value culture2_result culturelab
+label value m4_culture1_result culturelab 
+label value m4_culture2_result culturelab
+label value m8_culture1_result culturelab 
+label value m8_culture2_result culturelab 
+label value m12_culture1_result culturelab 
+label value m12_culture2_result culturelab
 
 *generating new variable: bmi category
 generate bmicat=.
@@ -57,9 +66,6 @@ list subject_id m4_case_category if (m4_case_category==1 | m4_case_category==2)
 *visually
 histogram age, normal
 histogram age, normal by(subject_cat)
-tabulate sex subject_cat, col m
-tabulate sex subject_cat, col chi2
-
 *statistically
 sktest age
 summarize age, d
@@ -67,8 +73,8 @@ summarize age if subject_cat==2,d
 summarize age if subject_cat==3,d
 ranksum age, by (subject_cat)
 
-tabulate sex subject_cat, col chi2
-tabulate smokes subject_cat, m col chi
+tabulate sex subject_cat, m col chi2
+tabulate smokes subject_cat, m col chi2
 tabulate bcg_scar subject_cat, m col chi2
 tabulate coughing subject_cat, m col chi2
 	histogram cough_dur if coughing==1, normal by(subject_cat)
@@ -83,41 +89,88 @@ tabulate fever subject_cat, m col chi2
 tabulate weightloss subject_cat, m col chi2
 tabulate fatigue subject_cat, m col chi2
 tabulate bmicat subject_cat, m col chi2
-tabulate cxr_result subject_cat, col chi2
+tabulate cxr_result subject_cat, m col chi2
 
 
 *generating new variable: smear result final
 gsort smear1_result smear2_result 
 generate smear_fin=.
 browse subject_id smear1_result smear2_result case_category m4_smear1_result m4_smear2_result m4_case_category m8_smear1_result m8_smear2_result m8_case_category m12_smear1_result m12_smear2_result m12_case_category smear_fin
+gsort case_category m4_case_category m8_case_category m12_case_category
 // Negative 
-replace smear_fin=0 if smear1_result==0 & smear2_result==0
-replace smear_fin=0 if smear1_result==0 & smear2_result==5
-replace smear_fin=0 if smear1_result==0 & smear2_result==.
+replace smear_fin=0 if smear1_result==0 & smear2_result==0 & case_category==1
+replace smear_fin=0 if smear1_result==0 & smear2_result==5 & case_category==1
+replace smear_fin=0 if smear1_result==0 & smear2_result==. & case_category==1
 // Scanty
-replace smear_fin=1 if smear1_result==0 & smear2_result==1
-replace smear_fin=1 if smear1_result==1 & smear2_result==1
-replace smear_fin=1 if smear1_result==5 & smear2_result==1
+replace smear_fin=1 if smear1_result==0 & smear2_result==1 & case_category==1
+replace smear_fin=1 if smear1_result==1 & smear2_result==1 & case_category==1
+replace smear_fin=1 if smear1_result==5 & smear2_result==1 & case_category==1
 // Positive 1
-replace smear_fin=2 if smear1_result==0 & smear2_result==2
-replace smear_fin=2 if smear1_result==2 & smear2_result==0
-replace smear_fin=2 if smear1_result==2 & smear2_result==1
+replace smear_fin=2 if smear1_result==0 & smear2_result==2 & case_category==1
+replace smear_fin=2 if smear1_result==2 & smear2_result==0 & case_category==1
+replace smear_fin=2 if smear1_result==2 & smear2_result==1 & case_category==1
 // Positive 2
-replace smear_fin=3 if smear1_result==2 & smear2_result==3
-replace smear_fin=3 if smear1_result==3 & smear2_result==2
-replace smear_fin=3 if smear1_result==3 & smear2_result==3
+replace smear_fin=3 if smear1_result==2 & smear2_result==3 & case_category==1
+replace smear_fin=3 if smear1_result==3 & smear2_result==2 & case_category==1
+replace smear_fin=3 if smear1_result==3 & smear2_result==3 & case_category==1
 // Positive 3
-replace smear_fin=4 if smear1_result==0 & smear2_result==4
-replace smear_fin=4 if smear1_result==4 & smear2_result==0
-replace smear_fin=4 if smear1_result==4 & smear2_result==3
-replace smear_fin=4 if smear1_result==4 & smear2_result==4
+replace smear_fin=4 if smear1_result==0 & smear2_result==4 & case_category==1
+replace smear_fin=4 if smear1_result==4 & smear2_result==0 & case_category==1
+replace smear_fin=4 if smear1_result==4 & smear2_result==3 & case_category==1
+replace smear_fin=4 if smear1_result==4 & smear2_result==4 & case_category==1
 // Missing
-replace smear_fin=. if smear1_result==. & smear2_result==.
+replace smear_fin=. if smear1_result==. & smear2_result==. & case_category==1
 
 *check m4
 gsort m4_case_category
-replace smear_fin=0 if m4_smear1_result==0 & m4_smear2_result==0 &m4_case_category==1
-replace smear_fin=. if m4_smear1_result==. & m4_smear2_result==. &m4_case_category==1
+replace smear_fin=0 if m4_smear1_result==0 & m4_smear2_result==0 & m4_case_category==1
+replace smear_fin=. if m4_smear1_result==. & m4_smear2_result==. & m4_case_category==1
 
 *check m8
 gsort m8_case_category
+replace smear_fin=. if m8_smear1_result==. & m8_smear2_result==. & m8_case_category==1
+replace smear_fin=0 if m8_smear1_result==0 & m8_smear2_result==0 & m8_case_category==1
+replace smear_fin=1 if m8_smear1_result==0 & m8_smear2_result==1 & m8_case_category==1
+
+*check m12
+gsort m12_case_category
+replace smear_fin=0 if m12_smear1_result==0 & m12_smear2_result==0 & m12_case_category==1
+replace smear_fin=. if m12_smear1_result==. & m12_smear2_result==. & m12_case_category==1
+
+*generating new variable: culture result final
+generate culture_fin=.
+browse subject_id smear1_result smear2_result culture1_result culture2_result case_category m4_smear2_result m4_smear2_result m4_culture1_result m4_culture2_result m4_case_category m8_smear2_result m8_smear2_result m8_culture1_result m8_culture2_result m8_case_category m12_smear1_result m12_smear2_result m12_smear2_result m12_culture1_result m12_culture2_result m12_case_category culture_fin
+browse subject_id culture1_result culture2_result case_category m4_culture1_result m4_culture2_result m4_case_category m8_culture1_result m8_culture2_result m8_case_category m12_culture1_result m12_culture2_result m12_case_category culture_fin
+sort culture1_result culture2_result
+label define culfinlab 0 "Negative" 1 "Positive" 2 "Indeterminate"
+label list
+label value culture_fin culfinlab 
+// Negative
+replace culture_fin=0 if culture1_result==1 & culture2_result==. & case_category==1
+// Positive
+replace culture_fin=1 if culture1_result==3 & culture2_result==. & case_category==1
+replace culture_fin=1 if culture1_result==3 & culture2_result==3 & case_category==1
+// ..
+replace culture_fin=. if culture1_result==. & culture2_result==. & case_category==1
+
+sort m4_case_category
+replace culture_fin=0 if m4_culture1_result==1 & m4_culture2_result==. & m4_case_category==1
+replace culture_fin=1 if m4_culture1_result==3 & m4_culture2_result==. & m4_case_category==1
+replace culture_fin=. if m4_culture1_result==. & m4_culture2_result==. & m4_case_category==1
+
+sort m8_case_category
+replace culture_fin=0 if m8_culture1_result==1 & m8_culture2_result==. & m8_case_category==1
+replace culture_fin=1 if m8_culture1_result==3 & m8_culture2_result==. & m8_case_category==1
+replace culture_fin=. if m8_culture1_result==. & m8_culture2_result==. & m8_case_category==1
+
+sort m12_case_category
+replace culture_fin=0 if m12_culture1_result==1 & m12_culture2_result==. & m12_case_category==1
+replace culture_fin=1 if m12_culture1_result==3 & m12_culture2_result==. & m12_case_category==1
+replace culture_fin=. if m12_culture1_result==. & m12_culture2_result==. & m12_case_category==1
+
+tabulate smear_fin subject_cat if smear_fin!=., m col chi2
+tabulate smear_fin subject_cat, m col chi2
+tabulate xpert_result subject_cat if xpert_result!=5, m col chi2
+tabulate xpert_result subject_cat, m col chi2
+tabulate culture_fin subject_cat if culture_fin!=., m col chi2
+tabulate culture_fin subject_cat, m col chi2
