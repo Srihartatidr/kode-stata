@@ -14,9 +14,6 @@ label list
 label value case_category casecatlab
 
 // calculating TB case definition based on subject_cat
-tab case_category subject_cat
-
-*computing ci for proportions
 tab case_category subject_cat, m
 
 // PREVALENCE //
@@ -89,7 +86,7 @@ format day_in %td
 *generate day_out variable
 generate day_out=.
 format day_out %td
-browse subject_id date_basei date_lefti m4_datei m4_date_lefti m8_datei m8_date_lefti m12_datei m12_date_lefti day_in day_out
+browse subject_id date_basei date_lefti case_category m4_datei m4_date_lefti m4_case_category m8_datei m8_date_lefti m8_case_category m12_datei m12_date_lefti m12_case_category day_in day_out
 replace day_out=date_lefti if m4_datei==. & m8_datei==. & m12_datei==.
 replace day_out=m8_date_lefti if date_lefti==. & m4_date_lefti==. & m8_date_lefti!=. & m12_date_lefti==.
 replace day_out=m12_date_lefti if m8_date_lefti==. & m4_date_lefti==. & date_lefti==. 
@@ -100,18 +97,58 @@ replace day_out=m4_date_lefti if date_lefti==. & m4_datei!=. & m8_datei==. & m8_
 replace day_out=m8_datei if date_lefti==. & m4_date_lefti==. & m12_datei==.
 gsort day_out 
 sort day_in
-codebook day_out
+
+*lihat kasus satu persatu
+gsort m4_case_category
+*6 kasus
+replace day_out= td(16feb2022) in 4097
+replace m4_date_lefti= td(01feb2022) in 4102
+replace day_out= td(01feb2022) in 4102
+
+gsort m8_case_category
+*9 kasus
+replace m8_date_lefti= td(15feb2023) in 4077
+replace day_out= td(15feb2023) in 4077
+replace m8_date_lefti= td(01dec2022) in 4078
+replace day_out= td(01dec2022) in 4078
+replace m8_date_lefti= td(27mar2023) in 4079
+replace day_out= td(27mar2023) in 4079
+replace m8_date_lefti= td(09jan2023) in 4082
+replace day_out= td(09jan2023) in 4082
+replace m8_date_lefti= td(06feb2023) in 4083
+replace day_out= td(06feb2023) in 4083
+replace m8_date_lefti= td(24aug2022) in 4084
+replace day_out= td(24aug2022) in 4084
+
+gsort m12_case_category
+*12 kasus
+browse subject_id date_basei m8_datei m8_date_lefti m8_case_category m12_datei m12_date_lefti m12_case_category day_in day_out
+replace m12_date_lefti= td(08may2023) in 4032
+replace day_out= td(08may2023) in 4032
+replace m12_date_lefti= td(08jun2022) in 4034
+replace day_out= td(08jun2022) in 4034
+replace m12_date_lefti= td(27jan2023) in 4036
+replace day_out= td(27jan2023) in 4036
+replace m12_date_lefti= td(08feb2023) in 4037
+replace day_out= td(08feb2023) in 4037
+replace m12_date_lefti= td(12apr2023) in 4039
+replace day_out= td(12apr2023) in 4039
+replace m12_date_lefti= td(01nov2022) in 4040
+replace day_out= td(01nov2022) in 4040
+replace m12_date_lefti= td(09nov2022) in 4042
+replace day_out= td(09nov2022) in 4042
 
 *start with subset with complete day_out
 drop if day_out==.
-drop if case_category==1
+
+*drop subject with disease at baseline
+drop if case_category==1 | case_category==2
 
 *generate follow-up duration variables
 generate fudays=day_out-day_in
 generate fuweeks=fudays/7
 generate fumonths=fudays/30
 generate fuyears=(day_out-day_in)/365.25
-sort fumonths
 
 *generate event_tb variable
 *a. definite tb
@@ -122,8 +159,8 @@ tabulate subject_cat def_tb
 
 *generate new variable: unexposed group(1)=nc(3) and exposed group(2)=hhc(2)
 generate exposed_group=.
-replace exposed_group=2 if subject_cat==2
 replace exposed_group=1 if subject_cat==3
+replace exposed_group=2 if subject_cat==2
 
 //// DECLARE THE DATA AS A SURVIVAL_TIME DATA ////
 *a. use stset command based on fumonths
@@ -138,7 +175,7 @@ stset day_out, fail(case_category==1) origin(day_in) enter(day_in) id(subject_id
 stset day_out, fail(case_category==1) origin(day_in) enter(day_in) id(subject_id) scale(30)
 
 *calculate overall TB incidence rate
-di 27/4107.422
+di 27/4133.476
 // the TB incidence rate was 0.00629 cases per person-years, that is 6.29 in every 1000 people will experience TB in a year.
 
 *estimate TB IR and 95% CI per 1000 person-years
@@ -178,6 +215,6 @@ replace poss_tb=0 if poss_tb!=1
 tabulate subject_cat poss_tb
 
 stset fuyears, failure(poss_tb==1)
-di 152/4107.422
+di 152/4133.476
 strate, per (1000)
 strate exposed_group, per(1000)
